@@ -1,40 +1,101 @@
-import { useState } from 'react';
-import { Graph } from '../types/graph';
+"use client";
 
-export const useBFS = (graph: Graph) => {
-  const [path, setPath] = useState<string[]>([]);
+import React, { createContext, useContext, useState } from "react";
+import { Graph, Link, Node } from "../types/graph";
 
-  const bfs = (startNode: string, targetNode: string) => {
+interface GraphContextType {
+  relatedNodes: string[];
+  matchingNodes: Node[];
+  path: { nodes: Node[]; links: Link[] };
+  findRelatedNodes: (searchTerm: string) => { [layer: number]: string[] };
+}
+
+const GraphContext = createContext<GraphContextType | undefined>(undefined);
+
+export const GraphProvider: React.FC<{
+  graph: Graph;
+  children: React.ReactNode;
+}> = ({ graph, children }) => {
+  const [relatedNodes, setRelatedNodes] = useState<string[]>([]);
+  const [matchingNodes, setMatchingNodes] = useState<Node[]>([]);
+  const [path, setPath] = useState<{ nodes: Node[]; links: Link[] }>({
+    nodes: [],
+    links: [],
+  });
+
+  const findRelatedNodes = (searchTerm: string) => {
+    setRelatedNodes([]);
+    setPath({ nodes: [], links: [] });
+
     const visited = new Set<string>();
-    const queue: string[][] = [[startNode]];
+    const queue: [Node, number][] = [];
+    const foundNodes: Node[] = [];
+    const foundLinks: Link[] = [];
+    const neighborsByLayer: { [layer: number]: string[] } = {}; // Armazena nós por camada
+
+    const initialNodes = graph.nodes.filter((node) =>
+      node.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setMatchingNodes(initialNodes);
+
+    initialNodes.forEach((node) => {
+      if (!visited.has(node.id)) {
+        visited.add(node.id);
+        queue.push([node, 0]);
+        foundNodes.push(node);
+      }
+    });
 
     while (queue.length > 0) {
-      const currentPath = queue.shift();
-      if (!currentPath) continue;
+      const [currentNode, layer] = queue.shift()!;
 
-      const node = currentPath[currentPath.length - 1];
-
-      if (node === targetNode) {
-        setPath(currentPath);
-        return currentPath;
+      if (!neighborsByLayer[layer]) {
+        neighborsByLayer[layer] = [];
       }
+      neighborsByLayer[layer].push(currentNode.id);
 
-      if (!visited.has(node)) {
-        visited.add(node);
+      const directLinks = graph.links.filter(
+        (link) =>
+          link.source === currentNode.id || link.target === currentNode.id
+      );
 
-        const neighbors = graph.links
-          .filter((link) => link.source === node || link.target === node)
-          .map((link) => (link.source === node ? link.target : link.source));
+      directLinks.forEach((link) => {
+        const targetNodeId =
+          link.source === currentNode.id ? link.target : link.source;
 
-        for (const neighbor of neighbors) {
-          queue.push([...currentPath, neighbor]);
+        if (!visited.has(targetNodeId)) {
+          visited.add(targetNodeId);
+
+          const targetNodeData = graph.nodes.find((n) => n.id === targetNodeId);
+          if (targetNodeData) {
+            foundNodes.push(targetNodeData);
+            queue.push([targetNodeData, layer + 1]);
+          }
+
+          foundLinks.push(link);
         }
-      }
+      });
     }
 
-    setPath([]);
-    return [];
+    setRelatedNodes(Object.values(neighborsByLayer).flat());
+    setPath({ nodes: foundNodes, links: foundLinks });
+    return neighborsByLayer;
   };
 
-  return { path, bfs };
+  return (
+    <GraphContext.Provider
+      value={{ relatedNodes, path, findRelatedNodes, matchingNodes }}
+    >
+      {children}
+    </GraphContext.Provider>
+  );
+};
+
+export const useGraph = () => {
+  const context = useContext(GraphContext);
+  if (!context) {
+    throw new Error("useGraph must be used within a GraphProvider");
+  }
+  return context;
 };
