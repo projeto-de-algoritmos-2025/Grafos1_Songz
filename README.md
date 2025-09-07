@@ -6,7 +6,7 @@
 ## Alunos
 | Matrícula | Aluno           |
 | --------- | --------------- |
-| 200054333 | Arthur Gabriel Lima Gomes |
+| 200054333 | [Arthur Gabriel Lima Gomes](https://github.com/ArthurGabrieel) |
 
 ## Sobre 
 Songz é um projeto desenvolvido para a disciplina de Projeto de Algoritmos, com o objetivo de explorar conceitos de teoria dos grafos aplicados a um sistema de recomendação de músicas. Utilizamos grafos para representar relações entre músicas, como conexões baseadas em gêneros musicais e colaborações entre artistas.
