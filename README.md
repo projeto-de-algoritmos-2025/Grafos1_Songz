@@ -47,3 +47,4 @@ O projeto estará disponível em `http://localhost:3000/`.
 
 ## Outros
 
+[Link de apresentação do projeto](https://youtu.be/p40grdFfmds)
